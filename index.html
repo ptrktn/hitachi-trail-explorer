@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hitachi Trail Explorer</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" type="image/png" sizes="192x192" href="images/icon192.png">
+</head>
+<body>
+  <h1>Hitachi Trail Explorer</h1>
+  <button onclick="getLocation()">📍 Show My Location</button>
+  <div id="location"></div>
+
+  <canvas id="mapCanvas" width="512" height="512" style="border:1px solid #ccc;"></canvas>
+
+  <h2>Upload GPX File</h2>
+  <i>Cache map tiles around the GPX track.</i><br />
+  <input type="file" accept=".gpx" onchange="handleGPXUpload(event)" />
+
+  <h2>Manage Cache</h2>
+  <button onclick="showCache()">🔍 Show Cached Files</button>
+  <button onclick="clearCache()">🧹 Clear Cache</button>
+  <div id="cacheInfo"></div>
+  <ol id="cacheList"></ol>
+
+
+  <script src="app.js"></script>
+</body>
+</html>

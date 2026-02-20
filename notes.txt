@@ -1,0 +1,29 @@
+How to download a raster map tile from Geographical Survey Institute of Japan?
+
+地図出典：国土地理院（https://maps.gsi.go.jp）
+
+import math
+
+def latlon_to_tile(lat, lon, zoom):
+    lat_rad = math.radians(lat)
+    n = 2 ** zoom
+    x_tile = int((lon + 180.0) / 360.0 * n)
+    y_tile = int((1.0 - math.log(math.tan(lat_rad) + 1 / math.cos(lat_rad)) / math.pi) / 2.0 * n)
+    return x_tile, y_tile
+
+wget https://cyberjapandata.gsi.go.jp/xyz/std/15/29000/12900.png
+
+https://cyberjapandata.gsi.go.jp/xyz/std/15/29000/12900.png
+
+latlon_to_tile(36.599, 140.654, 15)
+# Output: (29000, 12900)
+
+hitachi-trail-explorer/
+├── index.html
+├── app.js
+├── service-worker.js
+├── manifest.json
+├── styles.css
+└── images/
+    ├── trail-hitachi-north.png
+    └── trail-hitachi-south.png
