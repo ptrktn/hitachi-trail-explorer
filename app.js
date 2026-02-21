@@ -39,7 +39,7 @@ function downloadTilesAround(lat, lon, zoom = 15, radius = 1) {
       type: 'CACHE_FILES',
       files: tiles
     });
-    alert(`Caching ${tiles.length} map tiles...`);
+    // alert(`Caching ${tiles.length} map tiles...`);
   }
 }
 
@@ -72,7 +72,7 @@ function cacheTilesFromGPXOLD(gpxText, zoom = 15, radius = 1) {
       type: 'CACHE_FILES',
       files: tileURLs
     });
-    alert(`Caching ${tileURLs.length} tiles from GPX track...`);
+    // alert(`Caching ${tileURLs.length} tiles from GPX track...`);
   }
 }
 
@@ -95,7 +95,7 @@ async function cacheTilesFromGPX0(gpxText, zoom = 15, radius = 1) {
       type: 'CACHE_FILES',
       files: uncached.slice(0, 2) // FIXME: only send two at a time for testing
     });
-    alert(`Caching ${uncached.length} new tiles from GPX track...`);
+    // alert(`Caching ${uncached.length} new tiles from GPX track...`);
   } else {
     alert('All tiles already cached!');
   }
@@ -116,7 +116,7 @@ async function cacheTilesFromGPX(gpxText, zoom = 15, radius = 1, batchSize = 1, 
   }
 
   if (uncached.length === 0) {
-    alert('All tiles already cached!');
+    // alert('All tiles already cached!');
     return;
   }
 
@@ -124,7 +124,7 @@ async function cacheTilesFromGPX(gpxText, zoom = 15, radius = 1, batchSize = 1, 
 
   const batches = Math.ceil(uncached.length / batchSize);
   const time = Math.ceil(batches * delayMs / 1000);
-  alert(`Caching ${uncached.length} new tiles in ${batches} batches, estimated download time ${time} seconds.`);
+  // alert(`Caching ${uncached.length} new tiles in ${batches} batches, estimated download time ${time} seconds.`);
 
   // Throttle: send in batches
   for (let i = 0; i < uncached.length; i += batchSize) {
@@ -138,7 +138,7 @@ async function cacheTilesFromGPX(gpxText, zoom = 15, radius = 1, batchSize = 1, 
     await new Promise(resolve => setTimeout(resolve, delayMs));
   }
 
-  alert('Tile caching complete!');
+  //alert('Tile caching complete!');
 }
 
 
@@ -167,7 +167,7 @@ function getLocation() {
       document.getElementById('location').textContent = `Error: ${err.message}`;
     });
   } else {
-    alert('Geolocation not supported');
+    // alert('Geolocation not supported');
   }
 }
 
