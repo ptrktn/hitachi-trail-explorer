@@ -1,9 +1,19 @@
 const STATIC_CACHE = 'static-v1';
-const CORE_FILES = [ '/', '/index.html', '/app.js', '/manifest.json', '/images/icon192.png', '/styles.css'];
+const CORE_FILES = [ './', './index.html', './app.js', './manifest.json', './images/icon192.png', './styles.css'];
 
-// self.addEventListener('install', event => {
-//  self.skipWaiting();
-// });
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(STATIC_CACHE).then(cache => {
+      return Promise.all(
+        CORE_FILES.map(url =>
+          cache.add(url).catch(err => {
+            console.warn(`Failed to cache ${url}:`, err);
+          })
+        )
+      );
+    })
+  );
+});
 
 self.addEventListener('install', event => { 
   event.waitUntil( caches.open(STATIC_CACHE).then(cache => cache.addAll(CORE_FILES)) ); 
