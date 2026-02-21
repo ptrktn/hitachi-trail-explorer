@@ -141,8 +141,6 @@ async function cacheTilesFromGPX(gpxText, zoom = 15, radius = 1, batchSize = 1, 
   //alert('Tile caching complete!');
 }
 
-
-
 function handleGPXUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -160,11 +158,13 @@ function getLocation() {
       const { latitude, longitude } = pos.coords;
       document.getElementById('location').textContent =
         `Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}`;
-
       downloadTilesAround(latitude, longitude, 16, 1);
       drawMap(latitude, longitude, 16, 1);
     }, err => {
       document.getElementById('location').textContent = `Error: ${err.message}`;
+    }, {
+      enableHighAccuracy: true,
+      maximumAge: 60000
     });
   } else {
     // alert('Geolocation not supported');
