@@ -191,6 +191,7 @@ async function drawMap(lat, lon, zoom = 15, radius = 1) {
         if (response) {
           const blob = await response.blob();
           const img = new Image();
+          img.crossOrigin = 'anonymous'; // needed to avoid CORS issues when drawing cached images
           img.src = URL.createObjectURL(blob);
           await new Promise(resolve => {
             img.onload = () => {
