@@ -1,5 +1,5 @@
 const STATIC_CACHE = 'static-v1';
-const CORE_FILES = [ '/', '/index.html', '/app.js', '/manifest.json', '/images/icon192.png', '/styles.css' // if you have one ];
+const CORE_FILES = [ '/', '/index.html', '/app.js', '/manifest.json', '/images/icon192.png', '/styles.css'];
 
 // self.addEventListener('install', event => {
 //  self.skipWaiting();
