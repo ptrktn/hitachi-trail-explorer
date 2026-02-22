@@ -58,49 +58,6 @@ function getTilesFromGPXPoints(points, zoom, radius = 1) {
   return Array.from(tileSet).map(t => `https://cyberjapandata.gsi.go.jp/xyz/std/${t}.png`);
 }
 
-function cacheTilesFromGPXOLD(gpxText, zoom = 15, radius = 1) {
-  const points = parseGPX(gpxText);
-  const tileURLs = getTilesFromGPXPoints(points, zoom, radius);
-  
-  console.log(`Identified ${tileURLs.length} unique tiles to cache from GPX track.`);
-  console.log(tileURLs);
-
-  // FIXME const uncachedTiles = tileURLs.filter(url => !caches.match(url));
-  /// console.log(`Out of those, ${uncachedTiles.length} are not yet cached.`);
-  if (navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'CACHE_FILES',
-      files: tileURLs
-    });
-    // alert(`Caching ${tileURLs.length} tiles from GPX track...`);
-  }
-}
-
-async function cacheTilesFromGPX0(gpxText, zoom = 15, radius = 1) {
-  const points = parseGPX(gpxText);
-  const tileURLs = getTilesFromGPXPoints(points, zoom, radius);
-
-  const cache = await caches.open('static-v1');
-  const uncached = [];
-
-  for (const url of tileURLs) {
-    const match = await cache.match(url);
-    if (!match) {
-      uncached.push(url);
-    }
-  }
-
-  if (uncached.length > 0 && navigator.serviceWorker.controller) {
-    navigator.serviceWorker.controller.postMessage({
-      type: 'CACHE_FILES',
-      files: uncached.slice(0, 2) // FIXME: only send two at a time for testing
-    });
-    // alert(`Caching ${uncached.length} new tiles from GPX track...`);
-  } else {
-    alert('All tiles already cached!');
-  }
-}
-
 async function cacheTilesFromGPX(gpxText, zoom = 15, radius = 1, batchSize = 1, delayMs = 1000) {
   const points = parseGPX(gpxText);
   const tileURLs = getTilesFromGPXPoints(points, zoom, radius);
@@ -153,6 +110,10 @@ function handleGPXUpload(event) {
 }
 
 function getLocation() {
+  document.getElementById('location').textContent = 'Getting location...';
+  document.getElementById('mapCanvas').getContext('2d').clearRect(0, 0, 512, 512);
+  document.getElementById('locationButton').disabled = true;
+
   if ('geolocation' in navigator) {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude, longitude } = pos.coords;
@@ -166,8 +127,9 @@ function getLocation() {
       enableHighAccuracy: true,
       maximumAge: 60000
     });
+    document.getElementById('locationButton').disabled = false;
   } else {
-    // alert('Geolocation not supported');
+    document.getElementById('location').textContent = 'Geolocation not supported.';
   }
 }
 
