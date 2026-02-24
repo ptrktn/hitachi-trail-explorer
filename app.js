@@ -110,28 +110,47 @@ function handleGPXUpload(event) {
 }
 
 function getLocation() {
-  document.getElementById('location').textContent = 'Getting location...';
-  document.getElementById('mapCanvas').getContext('2d').clearRect(0, 0, 512, 512);
-  document.getElementById('locationButton').disabled = true;
+  const locationEl = document.getElementById('location');
+  const canvas = document.getElementById('mapCanvas');
+  const ctx = canvas.getContext('2d');
+  const button = document.getElementById('locationButton');
 
-  if ('geolocation' in navigator) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      const { latitude, longitude } = pos.coords;
-      document.getElementById('location').textContent =
-      `Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}`;
+  locationEl.textContent = 'Getting location...';
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  button.disabled = true;
+
+  if (!('geolocation' in navigator)) {
+    locationEl.textContent = 'Geolocation not supported.';
+    button.disabled = false;
+    return;
+  }
+
+  const watchId = navigator.geolocation.watchPosition(
+    pos => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      locationEl.textContent = `Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}, Accuracy: ${Math.round(accuracy)}m`;
+
+      // Update map
       downloadTilesAround(latitude, longitude, 15, 1);
       drawMap(latitude, longitude, 15, 1);
-    }, err => {
-      document.getElementById('location').textContent = `Error: ${err.message}`;
-    }, {
-      enableHighAccuracy: true, // Request high accuracy
-      maximumAge: 0, // Do not use cached position
-      timeout: 60000 // Wait for a maximum of 60 seconds
-    });
-    document.getElementById('locationButton').disabled = false;
-  } else {
-    document.getElementById('location').textContent = 'Geolocation not supported.';
-  }
+
+      // Stop tracking if accuracy is good enough
+      if (accuracy <= 25) {
+        navigator.geolocation.clearWatch(watchId);
+        locationEl.textContent += ' ✅';
+        button.disabled = false;
+      }
+    },
+    err => {
+      locationEl.textContent = `Error: ${err.message}`;
+      button.disabled = false;
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 60000
+    }
+  );
 }
 
 async function drawMap(lat, lon, zoom = 15, radius = 1) {
