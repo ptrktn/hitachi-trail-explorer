@@ -118,15 +118,15 @@ function getLocation() {
     navigator.geolocation.getCurrentPosition(pos => {
       const { latitude, longitude } = pos.coords;
       document.getElementById('location').textContent =
-        `Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}`;
-      downloadTilesAround(latitude, longitude, 16, 1);
-      drawMap(latitude, longitude, 16, 1);
+      `Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}`;
+      downloadTilesAround(latitude, longitude, 15, 1);
+      drawMap(latitude, longitude, 15, 1);
     }, err => {
       document.getElementById('location').textContent = `Error: ${err.message}`;
     }, {
-      enableHighAccuracy: true,
-      maximumAge: 3000,
-      timeout: 60000
+      enableHighAccuracy: true, // Request high accuracy
+      maximumAge: 0, // Do not use cached position
+      timeout: 60000 // Wait for a maximum of 60 seconds
     });
     document.getElementById('locationButton').disabled = false;
   } else {
