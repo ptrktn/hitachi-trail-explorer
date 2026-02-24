@@ -125,7 +125,8 @@ function getLocation() {
       document.getElementById('location').textContent = `Error: ${err.message}`;
     }, {
       enableHighAccuracy: true,
-      maximumAge: 60000
+      maximumAge: 3000,
+      timeout: 60000
     });
     document.getElementById('locationButton').disabled = false;
   } else {
