@@ -173,7 +173,7 @@ async function drawMap(lat, lon, zoom = 15, radius = 1) {
         if (response) {
           const blob = await response.blob();
           const img = new Image();
-          img.crossOrigin = 'anonymous'; // needed to avoid CORS issues when drawing cached images
+          img.crossOrigin = 'anonymous';
           img.src = URL.createObjectURL(blob);
           await new Promise(resolve => {
             img.onload = () => {
@@ -190,31 +190,22 @@ async function drawMap(lat, lon, zoom = 15, radius = 1) {
     }
   }
 
-  drawMarker(canvas, ctx);
-  
+  drawMarker(canvas, ctx, lat, lon, zoom, startX, startY, tileSize);
+
   if ('storage' in navigator && 'estimate' in navigator.storage) {
     navigator.storage.estimate().then(({ usage, quota }) => {
       console.log(`Using ${Math.round(usage / 1024)} KB of ${Math.round(quota / 1024)} KB`);
     });
   }
-
 }
 
-function drawMarker(canvas, ctx) {
-  const centerX = canvas.width / 2;
-  const centerY = canvas.height / 2;
-  const radius = 20;
-
-  ctx.strokeStyle = 'red';
-  ctx.lineWidth = 2;
-
-  ctx.beginPath();
-  ctx.moveTo(centerX - radius, centerY);
-  ctx.lineTo(centerX + radius, centerY);
-  ctx.moveTo(centerX, centerY - radius);
-  ctx.lineTo(centerX, centerY + radius);
-  ctx.stroke();
+function latLonToTileFloat(lat, lon, zoom) {
+  const scale = Math.pow(2, zoom);
+  const x = ((lon + 180) / 360) * scale;
+  const y = ((1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2) * scale;
+  return { x, y };
 }
+
 
 async function showCache() {
   const cache = await caches.open('static-v1');
