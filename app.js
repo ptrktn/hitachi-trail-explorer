@@ -153,7 +153,7 @@ function getLocation() {
   );
 }
 
-async function drawMap(lat, lon, zoom = 15, radius = 1) {
+async function drawMap(lat, lon, zoom = 15, radius = 1, accuracy = 0) {
   const canvas = document.getElementById('mapCanvas');
   const ctx = canvas.getContext('2d');
   const tileSize = 256;
@@ -190,7 +190,7 @@ async function drawMap(lat, lon, zoom = 15, radius = 1) {
     }
   }
 
-  drawMarker(canvas, ctx, lat, lon, zoom, startX, startY, tileSize);
+  drawMarker(canvas, ctx, lat, lon, zoom, startX, startY, tileSize, accuracy);
 
   if ('storage' in navigator && 'estimate' in navigator.storage) {
     navigator.storage.estimate().then(({ usage, quota }) => {
@@ -206,6 +206,37 @@ function latLonToTileFloat(lat, lon, zoom) {
   return { x, y };
 }
 
+function drawMarker(canvas, ctx, lat, lon, zoom, startTileX, startTileY, tileSize, accuracy = 0) {
+  const tileCoords = latLonToTileFloat(lat, lon, zoom);
+  const pixelX = (tileCoords.x - startTileX) * tileSize;
+  const pixelY = (tileCoords.y - startTileY) * tileSize;
+
+  // Convert accuracy in meters to pixels at current zoom
+  const metersPerPixel = (40075016.686 * Math.cos(lat * Math.PI / 180)) / (Math.pow(2, zoom) * tileSize);
+  const radiusPixels = accuracy / metersPerPixel;
+
+  // Draw accuracy circle
+  if (accuracy > 5) {
+    ctx.beginPath();
+    ctx.arc(pixelX, pixelY, radiusPixels, 0, 2 * Math.PI);
+    ctx.fillStyle = 'rgba(0, 0, 255, 0.1)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 0, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Draw crosshair marker
+  const crossRadius = 20;
+  ctx.strokeStyle = 'red';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(pixelX - crossRadius, pixelY);
+  ctx.lineTo(pixelX + crossRadius, pixelY);
+  ctx.moveTo(pixelX, pixelY - crossRadius);
+  ctx.lineTo(pixelX, pixelY + crossRadius);
+  ctx.stroke();
+}
 
 async function showCache() {
   const cache = await caches.open('static-v1');
