@@ -132,7 +132,7 @@ function getLocation() {
 
       // Update map
       downloadTilesAround(latitude, longitude, 15, 1);
-      drawMap(latitude, longitude, 15, 1);
+      drawMap(latitude, longitude, 15, 1, accuracy);
 
       // Stop tracking if accuracy is good enough
       if (accuracy <= 25) {
