@@ -2,6 +2,15 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js');
 }
 
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+function tileToLatLon(x, y, zoom) {
+  const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, zoom);
+  const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+  const lon = (x / Math.pow(2, zoom)) * 360 - 180;
+  return { lat, lon };
+}
+
 function parseGPX(gpxText) {
   const parser = new DOMParser();
   const xml = parser.parseFromString(gpxText, 'application/xml');
@@ -9,6 +18,9 @@ function parseGPX(gpxText) {
     lat: parseFloat(pt.getAttribute('lat')),
     lon: parseFloat(pt.getAttribute('lon'))
   }));
+  
+  console.log(`Parsed ${points.length} points from GPX`);
+
   return points;
 }
 
@@ -73,29 +85,33 @@ async function cacheTilesFromGPX(gpxText, zoom = 15, radius = 1, batchSize = 1, 
   }
 
   if (uncached.length === 0) {
-    // alert('All tiles already cached!');
+    console.log('All tiles already cached!');
     return;
   }
 
-  // uncached = uncached.slice(0, 2); // FIXME: limit for testing
-
   const batches = Math.ceil(uncached.length / batchSize);
   const time = Math.ceil(batches * delayMs / 1000);
-  // alert(`Caching ${uncached.length} new tiles in ${batches} batches, estimated download time ${time} seconds.`);
+  console.log(`Caching ${uncached.length} new tiles in ${batches} batches, estimated download time ${time} seconds.`);
 
   // Throttle: send in batches
   for (let i = 0; i < uncached.length; i += batchSize) {
     const batch = uncached.slice(i, i + batchSize);
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'CACHE_FILES',
-        files: batch
-      });
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg.active) {
+        console.log(batch);
+        reg.active.postMessage({
+          type: 'CACHE_FILES',
+          files: batch
+        });
+      }
+    } catch (err) {
+      console.error('Service worker not available:', err);
     }
     await new Promise(resolve => setTimeout(resolve, delayMs));
   }
 
-  //alert('Tile caching complete!');
+  console.log('Tile caching completed!');
 }
 
 function handleGPXUpload(event) {
@@ -135,7 +151,7 @@ function getLocation() {
       drawMap(latitude, longitude, 15, 1, accuracy);
 
       // Stop tracking if accuracy is good enough
-      if (accuracy <= 25) {
+      if (!isMobile || accuracy <= 25) {
         navigator.geolocation.clearWatch(watchId);
         locationEl.textContent += ' ✅';
         button.disabled = false;
@@ -157,7 +173,6 @@ async function drawMap(lat, lon, zoom = 15, radius = 1, accuracy = 0) {
   const canvas = document.getElementById('mapCanvas');
   const ctx = canvas.getContext('2d');
   const tileSize = 256;
-
   const center = latLonToTile(lat, lon, zoom);
   const startX = center.x - radius;
   const startY = center.y - radius;
