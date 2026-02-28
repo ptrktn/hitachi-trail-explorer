@@ -3,12 +3,91 @@ if ('serviceWorker' in navigator) {
 }
 
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let tileOrigin = { x: 0, y: 0 };
+const zoom = 15;  // Fixed zoom level for simplicity
+let tilesWide = 3;
+let tilesHigh = 3;
+const tileSize = 256;
+
+let markerLat = 0;
+let markerLon = 0;
+let lastAccuracy = 0;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
+const canvas = document.getElementById('mapCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = tilesWide * tileSize;
+canvas.height = tilesHigh * tileSize;
+
+/*
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  drawMap(tileOrigin.x, tileOrigin.y, zoom, tilesWide, tilesHigh, markerLat, markerLon, lastAccuracy);
+});
+*/
+
+function handleTilePan(dx, dy) {
+  const threshold = 64; // Minimum drag distance to trigger pan
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > threshold) tileOrigin.x -= 1; // pan west
+    else if (dx < -threshold) tileOrigin.x += 1; // pan east
+  } else {
+    if (dy > threshold) tileOrigin.y -= 1; // pan north
+    else if (dy < -threshold) tileOrigin.y += 1; // pan south
+  }
+
+  drawMap(tileOrigin.x, tileOrigin.y, zoom, tilesWide, tilesHigh, markerLat, markerLon, lastAccuracy);
+}
+
+canvas.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  dragStart.x = e.offsetX;
+  dragStart.y = e.offsetY;
+});
+
+canvas.addEventListener("mouseup", (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+  handleTilePan(e.offsetX - dragStart.x, e.offsetY - dragStart.y);
+});
+
+canvas.addEventListener("touchstart", (e) => {
+  if (e.touches.length !== 1) return;
+  isDragging = true;
+  const touch = e.touches[0];
+  dragStart.x = touch.clientX;
+  dragStart.y = touch.clientY;
+});
+
+canvas.addEventListener("touchend", (e) => {
+  if (!isDragging) return;
+  isDragging = false;
+  const touch = e.changedTouches[0];
+  handleTilePan(touch.clientX - dragStart.x, touch.clientY - dragStart.y);
+});
 
 function tileToLatLon(x, y, zoom) {
   const n = Math.PI - (2 * Math.PI * y) / Math.pow(2, zoom);
   const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
   const lon = (x / Math.pow(2, zoom)) * 360 - 180;
   return { lat, lon };
+}
+
+function getTileOrigin(lat, lon, zoom, tilesWide, tilesHigh) {
+  const center = latLonToTile(lat, lon, zoom);
+  return {
+    x: Math.floor(center.x - tilesWide / 2),
+    y: Math.floor(center.y - tilesHigh / 2)
+  };
+}
+
+function centerOn(lat, lon) {
+  downloadTilesAround(lat, lon, zoom, 1);
+  const center = latLonToTile(lat, lon, zoom);
+  tileOrigin.x = center.x - Math.trunc(tilesWide / 2);
+  tileOrigin.y = center.y - Math.trunc(tilesHigh / 2);
+  drawMap(tileOrigin.x, tileOrigin.y, zoom, tilesWide, tilesHigh, markerLat, markerLon, lastAccuracy);
 }
 
 function parseGPX(gpxText) {
@@ -51,7 +130,7 @@ function downloadTilesAround(lat, lon, zoom = 15, radius = 1) {
       type: 'CACHE_FILES',
       files: tiles
     });
-    // alert(`Caching ${tiles.length} map tiles...`);
+    console.log(`Caching ${tiles.length} map tiles...`);
   }
 }
 
@@ -147,8 +226,12 @@ function getLocation() {
       locationEl.textContent = `Latitude: ${latitude.toFixed(5)}, Longitude: ${longitude.toFixed(5)}, Accuracy: ${Math.round(accuracy)}m`;
 
       // Update map
-      downloadTilesAround(latitude, longitude, 15, 1);
-      drawMap(latitude, longitude, 15, 1, accuracy);
+      // downloadTilesAround(latitude, longitude, 15, 1);
+      lastAccuracy = accuracy;
+      markerLat = latitude;
+      markerLon = longitude;
+      centerOn(latitude, longitude);
+      // drawMap(latitude, longitude, 15, 1, accuracy);
 
       // Stop tracking if accuracy is good enough
       if (!isMobile || accuracy <= 25) {
@@ -169,18 +252,17 @@ function getLocation() {
   );
 }
 
-async function drawMap(lat, lon, zoom = 15, radius = 1, accuracy = 0) {
+async function drawMap(tileOriginX, tileOriginY, zoom = 15, tilesWide = 3, tilesHigh = 3, markerLat = null, markerLon = null, accuracy = 0) {
   const canvas = document.getElementById('mapCanvas');
   const ctx = canvas.getContext('2d');
-  const tileSize = 256;
-  const center = latLonToTile(lat, lon, zoom);
-  const startX = center.x - radius;
-  const startY = center.y - radius;
 
-  for (let dx = 0; dx <= 2 * radius; dx++) {
-    for (let dy = 0; dy <= 2 * radius; dy++) {
-      const x = startX + dx;
-      const y = startY + dy;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let dx = 0; dx < tilesWide; dx++) {
+    for (let dy = 0; dy < tilesHigh; dy++) {
+      const x = tileOriginX + dx;
+      const y = tileOriginY + dy;
       const url = `https://cyberjapandata.gsi.go.jp/xyz/std/${zoom}/${x}/${y}.png`;
 
       try {
@@ -193,6 +275,14 @@ async function drawMap(lat, lon, zoom = 15, radius = 1, accuracy = 0) {
           await new Promise(resolve => {
             img.onload = () => {
               ctx.drawImage(img, dx * tileSize, dy * tileSize, tileSize, tileSize);
+              // 🧱 Draw tile boundary 
+              ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; 
+              ctx.lineWidth = 1; 
+              ctx.strokeRect(dx * tileSize, dy * tileSize, tileSize, tileSize); 
+              // Optional: label tile coordinates 
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.5)'; 
+              ctx.font = '12px sans-serif'; 
+              ctx.fillText(`(${x}, ${y})`, dx * tileSize + 4, dy * tileSize + 14);
               resolve();
             };
           });
@@ -205,7 +295,10 @@ async function drawMap(lat, lon, zoom = 15, radius = 1, accuracy = 0) {
     }
   }
 
-  drawMarker(canvas, ctx, lat, lon, zoom, startX, startY, tileSize, accuracy);
+  // Draw marker if coordinates are provided
+  if (markerLat !== null && markerLon !== null) {
+    drawMarker(canvas, ctx, markerLat, markerLon, zoom, tileOriginX, tileOriginY, tileSize, accuracy);
+  }
 
   if ('storage' in navigator && 'estimate' in navigator.storage) {
     navigator.storage.estimate().then(({ usage, quota }) => {
